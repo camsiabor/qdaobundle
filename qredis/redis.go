@@ -9,7 +9,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/pkg/errors"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -101,7 +100,7 @@ func (o *DaoRedis) SelectDB(db string) error {
 	return err
 }
 
-func (o *DaoRedis) UpdateDB(db string, options interface{}, create bool, override bool) (interface{}, error) {
+func (o *DaoRedis) UpdateDB(db string, options interface{}, create bool, override bool, opt qdao.UOpt) (interface{}, error) {
 	o.Lock()
 	defer o.UnLock()
 
@@ -141,7 +140,7 @@ func (o *DaoRedis) UpdateDB(db string, options interface{}, create bool, overrid
 	return true, nil
 }
 
-func (o *DaoRedis) UpdateGroup(db string, group string, options interface{}, create bool, override bool) (interface{}, error) {
+func (o *DaoRedis) UpdateGroup(db string, group string, options interface{}, create bool, override bool, opt qdao.UOpt) (interface{}, error) {
 	panic("implement")
 	var conn = o.getConn(db)
 	var exist bool
@@ -159,11 +158,11 @@ func (o *DaoRedis) UpdateGroup(db string, group string, options interface{}, cre
 	return nil, nil
 }
 
-func (o *DaoRedis) GetDB(db string) (interface{}, error) {
+func (o *DaoRedis) GetDB(db string, opt qdao.QOpt) (interface{}, error) {
 	panic("implement")
 }
 
-func (o *DaoRedis) GetGroup(db string, group string) (interface{}, error) {
+func (o *DaoRedis) GetGroup(db string, group string, opt qdao.QOpt) (interface{}, error) {
 	panic("implement")
 }
 
@@ -191,7 +190,7 @@ func (o *DaoRedis) getConn(db string) redis.Conn {
 	return conn
 }
 
-func (o *DaoRedis) Get(db string, group string, id string, unmarshal bool) (ret interface{}, err error) {
+func (o *DaoRedis) Get(db string, group string, id string, unmarshal int, opt qdao.QOpt) (ret interface{}, err error) {
 	var conn = o.getConn(db)
 	if len(group) == 0 {
 		ret, err = redis.StringMap(conn.Do("HGETALL", id))
@@ -209,8 +208,8 @@ func (o *DaoRedis) Get(db string, group string, id string, unmarshal bool) (ret 
 				err = nil
 			}
 		}
-		if ret != nil && unmarshal {
-			if unmarshal {
+		if ret != nil && unmarshal != 0 {
+			if unmarshal != 0 {
 				var m map[string]interface{}
 				err = json.Unmarshal([]byte(sret), &m)
 				ret = m
@@ -222,7 +221,7 @@ func (o *DaoRedis) Get(db string, group string, id string, unmarshal bool) (ret 
 	return ret, err
 }
 
-func (o *DaoRedis) Gets(db string, group string, ids []interface{}, unmarshal bool) (rets []interface{}, err error) {
+func (o *DaoRedis) Gets(db string, group string, ids []interface{}, unmarshal int, opt qdao.QOpt) (rets []interface{}, err error) {
 	var retscount = 0
 	var conn = o.getConn(db)
 	var idslen = len(ids)
@@ -257,7 +256,7 @@ func (o *DaoRedis) Gets(db string, group string, ids []interface{}, unmarshal bo
 		}
 		if hget {
 			var sone, _ = redis.String(one, oneerr)
-			if unmarshal {
+			if unmarshal != 0 {
 				var m map[string]interface{}
 				oneerr = json.Unmarshal([]byte(sone), &m)
 			}
@@ -272,7 +271,7 @@ func (o *DaoRedis) Gets(db string, group string, ids []interface{}, unmarshal bo
 	return rets[:retscount], err
 }
 
-func (o *DaoRedis) Keys(db string, group string, wildcard string) (keys []string, err error) {
+func (o *DaoRedis) Keys(db string, group string, wildcard string, opt qdao.QOpt) (keys []string, err error) {
 	var conn = o.getConn(db)
 	if len(group) == 0 {
 		conn.Send("KEYS", wildcard)
@@ -283,11 +282,11 @@ func (o *DaoRedis) Keys(db string, group string, wildcard string) (keys []string
 	return redis.Strings(conn.Receive())
 }
 
-func (o *DaoRedis) Query(db string, query string, args []interface{}) (interface{}, error) {
+func (o *DaoRedis) Query(db string, query string, args []interface{}, opt qdao.QOpt) (interface{}, error) {
 	panic("implement me")
 }
 
-func (o *DaoRedis) Update(db string, group string, id string, val interface{}, override bool, marshal int) (interface{}, error) {
+func (o *DaoRedis) Update(db string, group string, id string, val interface{}, override bool, marshal int, opt qdao.UOpt) (interface{}, error) {
 	var conn = o.getConn(db)
 	if marshal > 0 {
 		bytes, err := json.Marshal(val)
@@ -331,7 +330,7 @@ func (o *DaoRedis) Update(db string, group string, id string, val interface{}, o
 	return nil, nil
 }
 
-func (o *DaoRedis) Updates(db string, group string, ids []interface{}, vals []interface{}, override bool, marshal int) (interface{}, error) {
+func (o *DaoRedis) Updates(db string, group string, ids []interface{}, vals []interface{}, override bool, marshal int, opt qdao.UOpt) (interface{}, error) {
 	var conn = o.getConn(db)
 	var idslen = len(ids)
 	var valslen = len(vals)
@@ -399,7 +398,7 @@ func (o *DaoRedis) Updates(db string, group string, ids []interface{}, vals []in
 	return rets, err
 }
 
-func (o *DaoRedis) Delete(db string, group string, id string) (interface{}, error) {
+func (o *DaoRedis) Delete(db string, group string, id string, opt qdao.DOpt) (interface{}, error) {
 	var conn = o.getConn(db)
 	if len(group) == 0 {
 		conn.Send("DEL", id)
@@ -410,7 +409,7 @@ func (o *DaoRedis) Delete(db string, group string, id string) (interface{}, erro
 	return redis.Int(conn.Receive())
 }
 
-func (o *DaoRedis) Deletes(db string, group string, ids []interface{}) (interface{}, error) {
+func (o *DaoRedis) Deletes(db string, group string, ids []interface{}, opt qdao.DOpt) (interface{}, error) {
 	var conn = o.getConn(db)
 	if len(group) == 0 {
 		conn.Send("DEL", ids...)
@@ -422,7 +421,7 @@ func (o *DaoRedis) Deletes(db string, group string, ids []interface{}) (interfac
 	return redis.Int(conn.Receive())
 }
 
-func (o *DaoRedis) ScanAsMap(db string, group string, from int, size int, unmarshal bool, query ...interface{}) (ret map[string]interface{}, cursor int, total int, err error) {
+func (o *DaoRedis) ScanAsMap(db string, group string, from int, size int, unmarshal int, query ...interface{}) (ret map[string]interface{}, cursor int, total int, err error) {
 	var conn = o.getConn(db)
 	var cmd string
 	if len(group) == 0 {
@@ -448,7 +447,7 @@ func (o *DaoRedis) ScanAsMap(db string, group string, from int, size int, unmars
 	return m, len(m), 0, err
 }
 
-func (o *DaoRedis) Scan(db string, group string, from int, size int, unmarshal bool, query ...interface{}) (ret []interface{}, cursor int, total int, err error) {
+func (o *DaoRedis) Scan(db string, group string, from int, size int, unmarshal int, query ...interface{}) (ret []interface{}, cursor int, total int, err error) {
 
 	//for k, v := range m {
 	//
@@ -457,7 +456,7 @@ func (o *DaoRedis) Scan(db string, group string, from int, size int, unmarshal b
 	return nil, 0, 0, nil
 }
 
-func (o *DaoRedis) Script(db string, group string, id string, script string, args []interface{}) (interface{}, error) {
+func (o *DaoRedis) Script(db string, group string, id string, script string, args []interface{}, opt qdao.QOpt) (interface{}, error) {
 	var conn = o.getConn(db)
 	var keycount int = 0
 	if args != nil {
@@ -465,137 +464,4 @@ func (o *DaoRedis) Script(db string, group string, id string, script string, arg
 	}
 	var rscript = redis.NewScript(keycount, script)
 	return redis.String(rscript.Do(conn, redis.Args{}.AddFlat(args)...))
-}
-
-/* ============================ supplement ========================== */
-
-func RHGetMap(rclient redis.Conn, key string, field string) (map[string]interface{}, error) {
-	var data, err = redis.String(rclient.Do("HGET", key, field))
-	if err != nil {
-		return nil, err
-	}
-	var r map[string]interface{}
-	err = json.Unmarshal([]byte(data), &r)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
-func RHSetMap(rclient redis.Conn, key string, field string, value interface{}) (bool, error) {
-	var bytes, err = json.Marshal(value)
-	if err != nil {
-		return false, err
-	}
-	var ok, rerr = redis.Bool(rclient.Do("HSET", key, field, string(bytes[:])))
-	if rerr != nil {
-		return false, rerr
-	}
-	return ok, nil
-}
-
-func RDel(rclient redis.Conn, key string) {
-	rclient.Do("DEL", key)
-}
-
-func RHMSet(rclient redis.Conn, key string, value interface{}) (bool, error) {
-	var args = redis.Args{}.Add(key).AddFlat(value)
-	var r, err = redis.Bool(rclient.Do("HMSET", args...))
-	return r, err
-}
-
-func RCmd(rclient redis.Conn, cmd string, args ...interface{}) (interface{}, error) {
-	rawreply, err := rclient.Do(cmd, args...)
-	if err != nil {
-		return nil, err
-	}
-	return RParse(cmd, rawreply, err)
-}
-
-func RParseScan(val interface{}, err error) (interface{}, error) {
-	if err != nil {
-		return val, err
-	}
-	var rets, _ = redis.Values(val, err)
-	rets[0], _ = redis.Int(rets[0], err)
-	rets[1], _ = redis.Strings(rets[1], err)
-	return rets, nil
-}
-
-var _rparsers map[string]interface{}
-
-func RParse(cmd string, rawreply interface{}, err error) (interface{}, error) {
-
-	cmd = strings.ToUpper(cmd)
-	if _rparsers == nil {
-		_rparsers = make(map[string]interface{})
-		_rparsers["DEL"] = redis.Bool
-		_rparsers["DUMP"] = redis.Bytes
-		_rparsers["RESTORE"] = redis.String
-		_rparsers["EXISTS"] = redis.Int64
-		_rparsers["EXPIRE"] = redis.Int64
-		_rparsers["EXPIREAT"] = redis.Int64
-		_rparsers["PEXPIRE "] = redis.Int64
-		_rparsers["PEXPIREAT"] = redis.Int64
-		_rparsers["TTL"] = redis.Int64
-		_rparsers["PTTL"] = redis.Int64
-		_rparsers["GET"] = redis.String
-		_rparsers["KEYS"] = redis.Strings
-		_rparsers["PERSIST"] = redis.Int64
-		_rparsers["RENAME"] = redis.String
-		_rparsers["SORT"] = redis.Strings
-
-		_rparsers["STRLEN"] = redis.Int64
-
-		_rparsers["HDEL"] = redis.Int64
-		_rparsers["HSET"] = redis.Int64
-		_rparsers["HSETNX"] = redis.Int64
-		_rparsers["HGET"] = redis.String
-		_rparsers["HKEYS"] = redis.Strings
-		_rparsers["HVALS"] = redis.Strings
-		_rparsers["HMSET"] = redis.String
-		_rparsers["HMGET"] = redis.Strings
-		_rparsers["HEXISTS"] = redis.Int64
-		_rparsers["HGETALL"] = redis.StringMap
-
-		_rparsers["LPUSH"] = redis.Int64
-		_rparsers["LPOP"] = redis.Int64
-		_rparsers["LLEN"] = redis.Int64
-		_rparsers["LSET"] = redis.String
-		_rparsers["LRANGE"] = redis.Strings
-
-		_rparsers["INCR"] = redis.Int64
-		_rparsers["INCRBY"] = redis.Int64
-		_rparsers["INCRBYFLOAT"] = redis.Float64
-
-		_rparsers["SADD"] = redis.Int64
-		_rparsers["SREM"] = redis.Int64
-
-		_rparsers["ZADD"] = redis.Int64
-		_rparsers["ZREM"] = redis.Int64
-		_rparsers["ZRANGE"] = redis.Strings
-
-		_rparsers["SCAN"] = RParseScan
-		_rparsers["HSCAN"] = RParseScan
-		_rparsers["SSCAN"] = RParseScan
-		_rparsers["ZSCAN"] = RParseScan
-
-		_rparsers["SELECT"] = redis.String
-
-	}
-
-	var parser = _rparsers[cmd]
-	if parser != nil {
-		//var orierr error;
-		//if (err == nil) {
-		//	err = fmt.Errorf("");
-		//} else {
-		//	orierr = err;
-		//}
-		var rets = qref.FuncCall(parser, rawreply, err)
-		var parsedreply = rets[0].Interface()
-		return parsedreply, err
-	}
-
-	return nil, fmt.Errorf("cmd %s not support yet", cmd)
 }

@@ -3,10 +3,59 @@ package qelastic
 import (
 	"context"
 	"fmt"
+	"github.com/camsiabor/qcom/qref"
 	"github.com/olivere/elastic"
 	"testing"
 	"time"
 )
+
+type MyThing struct {
+}
+
+type QMap map[string]interface{}
+
+func (o QMap) Print() {
+	o["xxx"] = "ooo"
+	fmt.Println(o)
+}
+
+func (o *MyThing) Do(m QMap) {
+	if m == nil {
+		fmt.Println("NULL!")
+		return
+	}
+	m["ada"] = 2
+	m["bolin"] = 3
+	fmt.Println(m)
+}
+
+func TestMap(t *testing.T) {
+
+	var thing = new(MyThing)
+
+	var m = make(map[string]interface{})
+	m["ada"] = 1
+	thing.Do(m)
+
+	var q = make(QMap)
+	q["power"] = 2
+	thing.Do(q)
+	q.Print()
+	fmt.Println(q)
+
+	qref.FuncCallByName(thing, "Do", map[string]interface{}{
+		"power": "here",
+	})
+
+	/*
+		var qthing = reflect.ValueOf(thing);
+		var qdo = qthing.MethodByName("Do");
+		var in0type = qdo.Type().In(0);
+		var x = reflect.New(in0type).Elem();
+		qdo.Call([]reflect.Value { x })
+	*/
+
+}
 
 func TestElastic(t *testing.T) {
 
