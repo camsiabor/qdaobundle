@@ -1,4 +1,4 @@
-package redis
+package qredis
 
 import (
 	"encoding/json"
@@ -16,8 +16,15 @@ import (
 // http://eastfisher.org/2018/03/18/redigo_study/
 
 type DaoRedis struct {
-	qdao.Dao
+	qdao.Config
 	pool *redis.Pool
+}
+
+func (o *DaoRedis) Configure(
+	name string, daotype string,
+	host string, port int, user string, pass string, database string,
+	options map[string]interface{}) error {
+	return o.Config.Configure(name, daotype, host, port, user, pass, database, options)
 }
 
 func (o *DaoRedis) Conn() (interface{}, error) {
@@ -92,6 +99,86 @@ func (o *DaoRedis) SelectDB(db string) error {
 	}
 	var _, err = conn.Do("SELECT", rdb)
 	return err
+}
+
+func (o *DaoRedis) UpdateDB(db string, options interface{}, create bool, override bool) (interface{}, error) {
+	o.Lock()
+	defer o.UnLock()
+
+	if o.DBMapping[db] != nil {
+		return false, fmt.Errorf("db already exist %v", o.DBMapping)
+	}
+
+	var index = util.GetInt(options, -1, "index")
+	if index < 0 {
+		return false, fmt.Errorf("index not found in options %v", options)
+	}
+
+	var exist bool
+	if !create {
+		exist, err := o.ExistDB(db)
+		if exist || err != nil {
+			return nil, err
+		}
+	}
+
+	if !override {
+		if exist {
+			return nil, nil
+		}
+	}
+
+	if !override {
+		for k, v := range o.DBMapping {
+			var vindex = util.AsInt(v, -1)
+			if vindex == index {
+				return false, fmt.Errorf("index already defined %v = %v", k, v)
+			}
+		}
+	}
+
+	o.DBMapping[db] = index
+	return true, nil
+}
+
+func (o *DaoRedis) UpdateGroup(db string, group string, options interface{}, create bool, override bool) (interface{}, error) {
+	panic("implement")
+	var conn = o.getConn(db)
+	var exist bool
+	if !create {
+		exist, err := o.ExistGroup(db, group)
+		if exist || err != nil {
+			return nil, err
+		}
+	}
+	if !override && exist {
+		return nil, nil
+	}
+	conn.Do("HSET", group, "_", "{}")
+	conn.Do("HDEL", group, "_")
+	return nil, nil
+}
+
+func (o *DaoRedis) GetDB(db string) (interface{}, error) {
+	panic("implement")
+}
+
+func (o *DaoRedis) GetGroup(db string, group string) (interface{}, error) {
+	panic("implement")
+}
+
+func (o *DaoRedis) ExistDB(db string) (bool, error) {
+	var rdb = o.DBMapping[db]
+	return rdb != nil, nil
+}
+
+func (o *DaoRedis) ExistGroup(db string, group string) (bool, error) {
+	var conn = o.getConn(db)
+	var r, err = redis.Strings(conn.Do("KEYS", group))
+	if err != nil {
+		return false, err
+	}
+	return len(r) > 0, nil
 }
 
 func (o *DaoRedis) getConn(db string) redis.Conn {
