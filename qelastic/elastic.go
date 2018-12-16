@@ -129,24 +129,27 @@ func (o *DaoElastic) Keys(db string, group string, wildcard string, opt qdao.QOp
 
 }
 
-func (o *DaoElastic) Exists(db string, group string, id []interface{}) (int, error) {
-	if len(id) == 0 {
+func (o *DaoElastic) Exists(db string, group string, ids []interface{}) (int64, error) {
+	if len(ids) == 0 {
 		return 0, nil
 	}
-	panic("impl")
-	//var idstr = util.SliceJoin(ids, "\"", "\",\"", "\"")
-	//var dsl = `{
-	//	"query": {
-	//		"ids" : {
-	//			"type" : "_doc",
-	//				"values" : %s
-	//		}
-	//	}
-	//}`
-	//dsl = fmt.Sprintf(dsl, idstr)
-	//esindex := o.getIndexName(db, group)
-	//_, err = o.client.Search(esindex).Source(dsl).Do(context.Background())
-
+	var idstr = util.SliceJoin(ids, "\"", "\",\"", "\"")
+	var dsl = `{
+		"_source" : [ "_id" ],
+		"query": {
+			"ids" : {
+				"type" : "_doc",
+					"values" : %s
+			}
+		}
+	}`
+	dsl = fmt.Sprintf(dsl, idstr)
+	esindex := o.getIndexName(db, group)
+	resp, err := o.client.Search(esindex).Source(dsl).Do(context.Background())
+	if err != nil {
+		return -1, err
+	}
+	return resp.Hits.TotalHits, err
 }
 
 func (o *DaoElastic) Get(db string, group string, id interface{}, unmarshal int, opt qdao.QOpt) (ret interface{}, err error) {

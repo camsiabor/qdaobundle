@@ -166,21 +166,22 @@ func (o *DaoRedis) GetGroup(db string, group string, opt qdao.QOpt) (interface{}
 	panic("implement")
 }
 
-func (o *DaoRedis) Exists(db string, group string, ids []interface{}) (int, error) {
+func (o *DaoRedis) Exists(db string, group string, ids []interface{}) (int64, error) {
 	var conn = o.getConn(db)
 	if len(group) == 0 {
-		return redis.Int(conn.Do("EXISTS", ids...))
+		var count, err = redis.Int(conn.Do("EXISTS", ids...))
+		return int64(count), err
 	} else {
 		for _, id := range ids {
 			conn.Send("HEXISTS", group, id)
 		}
 		var count int
 		var err error
-		var total = 0
+		var total int64 = 0
 		var n = len(ids)
 		for i := 0; i < n; i++ {
 			count, err = redis.Int(conn.Receive())
-			total = total + count
+			total = total + int64(count)
 		}
 		return total, err
 	}
