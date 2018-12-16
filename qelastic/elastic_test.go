@@ -3,8 +3,8 @@ package qelastic
 import (
 	"context"
 	"fmt"
+	"github.com/camsiabor/qcom/qref"
 	"github.com/olivere/elastic"
-	"reflect"
 	"testing"
 	"time"
 )
@@ -29,15 +29,13 @@ func (o *MyThing) Do(m QMap) {
 	fmt.Println(m)
 }
 
-func TestMap(t *testing.T) {
-	var sarray []string
-	var iarray []interface{}
-	var ts = reflect.TypeOf(sarray)
-	var ti = reflect.TypeOf(iarray)
-	reflect.New(ti).
-		fmt.Println(ts)
-	fmt.Println(ti)
+func (o *MyThing) DoSlice(s []string) {
+	fmt.Println(s)
+}
 
+func TestMap(t *testing.T) {
+	var o *MyThing
+	qref.FuncCallByName(o, "DoSlice", []interface{}{"power", "over", "whelming"})
 }
 
 func TestElastic(t *testing.T) {
