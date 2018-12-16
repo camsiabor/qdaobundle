@@ -3,8 +3,8 @@ package qelastic
 import (
 	"context"
 	"fmt"
-	"github.com/camsiabor/qcom/qref"
 	"github.com/olivere/elastic"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -30,30 +30,13 @@ func (o *MyThing) Do(m QMap) {
 }
 
 func TestMap(t *testing.T) {
-
-	var thing = new(MyThing)
-
-	var m = make(map[string]interface{})
-	m["ada"] = 1
-	thing.Do(m)
-
-	var q = make(QMap)
-	q["power"] = 2
-	thing.Do(q)
-	q.Print()
-	fmt.Println(q)
-
-	qref.FuncCallByName(thing, "Do", map[string]interface{}{
-		"power": "here",
-	})
-
-	/*
-		var qthing = reflect.ValueOf(thing);
-		var qdo = qthing.MethodByName("Do");
-		var in0type = qdo.Type().In(0);
-		var x = reflect.New(in0type).Elem();
-		qdo.Call([]reflect.Value { x })
-	*/
+	var sarray []string
+	var iarray []interface{}
+	var ts = reflect.TypeOf(sarray)
+	var ti = reflect.TypeOf(iarray)
+	reflect.New(ti).
+		fmt.Println(ts)
+	fmt.Println(ti)
 
 }
 

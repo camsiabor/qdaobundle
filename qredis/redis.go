@@ -166,6 +166,18 @@ func (o *DaoRedis) GetGroup(db string, group string, opt qdao.QOpt) (interface{}
 	panic("implement")
 }
 
+func (o *DaoRedis) Exist(db string, group string, id string) (bool, error) {
+	var conn = o.getConn(db)
+	if len(group) == 0 {
+		conn.Send("EXISTS", id)
+	} else {
+		conn.Send("HEXISTS", group, id)
+	}
+	var count, err = redis.Int(conn.Receive())
+	var exist = count > 0
+	return exist, err
+}
+
 func (o *DaoRedis) ExistDB(db string) (bool, error) {
 	var rdb = o.DBMapping[db]
 	return rdb != nil, nil
