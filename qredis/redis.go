@@ -166,16 +166,24 @@ func (o *DaoRedis) GetGroup(db string, group string, opt qdao.QOpt) (interface{}
 	panic("implement")
 }
 
-func (o *DaoRedis) Exist(db string, group string, id string) (bool, error) {
+func (o *DaoRedis) Exists(db string, group string, ids []interface{}) (int, error) {
 	var conn = o.getConn(db)
 	if len(group) == 0 {
-		conn.Send("EXISTS", id)
+		return redis.Int(conn.Do("EXISTS", ids...))
 	} else {
-		conn.Send("HEXISTS", group, id)
+		for _, id := range ids {
+			conn.Send("HEXISTS", group, id)
+		}
+		var count int
+		var err error
+		var total = 0
+		var n = len(ids)
+		for i := 0; i < n; i++ {
+			count, err = redis.Int(conn.Receive())
+			total = total + count
+		}
+		return total, err
 	}
-	var count, err = redis.Int(conn.Receive())
-	var exist = count > 0
-	return exist, err
 }
 
 func (o *DaoRedis) ExistDB(db string) (bool, error) {
@@ -202,7 +210,7 @@ func (o *DaoRedis) getConn(db string) redis.Conn {
 	return conn
 }
 
-func (o *DaoRedis) Get(db string, group string, id string, unmarshal int, opt qdao.QOpt) (ret interface{}, err error) {
+func (o *DaoRedis) Get(db string, group string, id interface{}, unmarshal int, opt qdao.QOpt) (ret interface{}, err error) {
 	var conn = o.getConn(db)
 	if len(group) == 0 {
 		ret, err = redis.StringMap(conn.Do("HGETALL", id))
@@ -298,7 +306,7 @@ func (o *DaoRedis) Query(db string, query string, args []interface{}, opt qdao.Q
 	panic("implement me")
 }
 
-func (o *DaoRedis) Update(db string, group string, id string, val interface{}, override bool, marshal int, opt qdao.UOpt) (interface{}, error) {
+func (o *DaoRedis) Update(db string, group string, id interface{}, val interface{}, override bool, marshal int, opt qdao.UOpt) (interface{}, error) {
 	var conn = o.getConn(db)
 	if marshal > 0 {
 		bytes, err := json.Marshal(val)
@@ -410,7 +418,7 @@ func (o *DaoRedis) Updates(db string, group string, ids []interface{}, vals []in
 	return rets, err
 }
 
-func (o *DaoRedis) Delete(db string, group string, id string, opt qdao.DOpt) (interface{}, error) {
+func (o *DaoRedis) Delete(db string, group string, id interface{}, opt qdao.DOpt) (interface{}, error) {
 	var conn = o.getConn(db)
 	if len(group) == 0 {
 		conn.Send("DEL", id)
@@ -468,7 +476,7 @@ func (o *DaoRedis) Scan(db string, group string, from int, size int, unmarshal i
 	return nil, 0, 0, nil
 }
 
-func (o *DaoRedis) Script(db string, group string, id string, script string, args []interface{}, opt qdao.QOpt) (interface{}, error) {
+func (o *DaoRedis) Script(db string, group string, id interface{}, script string, args []interface{}, opt qdao.QOpt) (interface{}, error) {
 	var conn = o.getConn(db)
 	var keycount int = 0
 	if args != nil {

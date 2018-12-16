@@ -149,7 +149,7 @@ func (o *DaoElastic) Exists(db string, group string, id []interface{}) (int, err
 
 }
 
-func (o *DaoElastic) Get(db string, group string, id string, unmarshal int, opt qdao.QOpt) (ret interface{}, err error) {
+func (o *DaoElastic) Get(db string, group string, id interface{}, unmarshal int, opt qdao.QOpt) (ret interface{}, err error) {
 	var esindex = o.getIndexName(db, group)
 	var dsl = `{	
     	"query" : {
@@ -198,7 +198,7 @@ func (o *DaoElastic) Gets(db string, group string, ids []interface{}, unmarshal 
 	return nil, nil
 }
 
-func (o *DaoElastic) Update(db string, group string, id string, val interface{}, override bool, marshal int, opt qdao.UOpt) (interface{}, error) {
+func (o *DaoElastic) Update(db string, group string, id interface{}, val interface{}, override bool, marshal int, opt qdao.UOpt) (interface{}, error) {
 	//var esindex = o.getIndexName(db, group)
 	//if (!override) {
 	//	//o.client.Search(esindex).Query(elastic.NewTermsQuery())
@@ -218,7 +218,7 @@ func (o *DaoElastic) Updates(db string, group string, ids []interface{}, vals []
 	panic("implement me")
 }
 
-func (o *DaoElastic) Delete(db string, group string, id string, opt qdao.DOpt) (interface{}, error) {
+func (o *DaoElastic) Delete(db string, group string, id interface{}, opt qdao.DOpt) (interface{}, error) {
 	panic("implement me")
 }
 
@@ -266,6 +266,6 @@ func (o *DaoElastic) ScanAsMap(db string, group string, from int, size int, unma
 	panic("implement me")
 }
 
-func (o *DaoElastic) Script(db string, group string, id string, script string, args []interface{}, opt qdao.QOpt) (interface{}, error) {
+func (o *DaoElastic) Script(db string, group string, id interface{}, script string, args []interface{}, opt qdao.QOpt) (interface{}, error) {
 	panic("implement me")
 }
