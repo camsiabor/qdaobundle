@@ -221,6 +221,10 @@ func (o *DaoElastic) Updates(db string, group string, ids []interface{}, vals []
 	panic("implement me")
 }
 
+func (o *DaoElastic) UpdateBatch(db string, groups []string, ids []interface{}, vals []interface{}, override bool, marshal int, opt qdao.UOpt) (interface{}, error) {
+	panic("implement me")
+}
+
 func (o *DaoElastic) Delete(db string, group string, id interface{}, opt qdao.DOpt) (interface{}, error) {
 	panic("implement me")
 }

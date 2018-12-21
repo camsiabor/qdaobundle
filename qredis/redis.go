@@ -352,16 +352,23 @@ func (o *DaoRedis) Update(db string, group string, id interface{}, val interface
 }
 
 func (o *DaoRedis) Updates(db string, group string, ids []interface{}, vals []interface{}, override bool, marshal int, opt qdao.UOpt) (interface{}, error) {
+	var groups = make([]string, len(ids))
+	return o.UpdateBatch(db, groups, ids, vals, override, marshal, opt)
+}
+
+func (o *DaoRedis) UpdateBatch(db string, groups []string, ids []interface{}, vals []interface{}, override bool, marshal int, opt qdao.UOpt) (interface{}, error) {
 	var conn = o.getConn(db)
 	var idslen = len(ids)
 	var valslen = len(vals)
 	if idslen != valslen {
 		return nil, fmt.Errorf("ids len != valslen, %d != %d", idslen, valslen)
 	}
-	var useset = len(group) == 0
+
 	for i := 0; i < idslen; i++ {
 		var id = ids[i]
+		var group = groups[i]
 		var val = vals[i]
+		var useset = len(group) == 0
 		if marshal > 0 {
 			bytes, err := json.Marshal(val)
 			if err != nil {
