@@ -201,6 +201,10 @@ func (o *DaoElastic) Gets(db string, group string, ids []interface{}, unmarshal 
 	return nil, nil
 }
 
+func (o *DaoElastic) List(db string, group string, from int, size int, unmarshal int, opt qdao.QOpt) (rets []interface{}, cursor int, err error) {
+	panic("implement me")
+}
+
 func (o *DaoElastic) Update(db string, group string, id interface{}, val interface{}, override bool, marshal int, opt qdao.UOpt) (interface{}, error) {
 	//var esindex = o.getIndexName(db, group)
 	//if (!override) {

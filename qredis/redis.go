@@ -292,6 +292,34 @@ func (o *DaoRedis) Gets(db string, group string, ids []interface{}, unmarshal in
 	return rets[:retscount], err
 }
 
+func (o *DaoRedis) List(db string, group string, from int, size int, unmarshal int, opt qdao.QOpt) (rets []interface{}, cursor int, err error) {
+
+	var reply interface{}
+	var conn = o.getConn(db)
+	if len(group) == 0 {
+		reply, err = conn.Do("SCAN", from)
+	} else {
+		reply, err = conn.Do("HSCAN", group, from)
+	}
+	if err != nil {
+		return nil, -1, err
+	}
+	var data, _ = redis.Values(reply, err)
+	cursor, _ = redis.Int(data[0], err)
+
+	/*
+		var datalen = len(data)
+		for i := 0; i < datalen; i = i + 2 {
+			var key = util.AsStr(data[i])
+			var val = util.AsStr(data[i + 1])
+			if unmarshal > 0 {
+
+			}
+		}
+	*/
+	return data, cursor, err
+}
+
 func (o *DaoRedis) Keys(db string, group string, wildcard string, opt qdao.QOpt) (keys []string, err error) {
 	var conn = o.getConn(db)
 	if len(group) == 0 {
