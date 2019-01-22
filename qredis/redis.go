@@ -314,6 +314,7 @@ func (o *DaoRedis) List(db string, group string, from int, size int, unmarshal i
 	var keyvalslen = len(keyvals)
 	var data = make([]interface{}, keyvalslen>>1)
 	if keyvalslen == 0 {
+		cursor = -1
 		return data, cursor, err
 	}
 	for n, i := 0, 0; i < keyvalslen; n, i = n+1, i+2 {
@@ -330,6 +331,9 @@ func (o *DaoRedis) List(db string, group string, from int, size int, unmarshal i
 			m["id"] = key
 			data[n] = m
 		}
+	}
+	if cursor == 0 {
+		cursor = -1
 	}
 	return data, cursor, err
 }
