@@ -97,6 +97,7 @@ func (o *DaoRedis) SelectDB(db string) error {
 		rdb = 0
 	}
 	var _, err = conn.Do("SELECT", rdb)
+
 	return err
 }
 
